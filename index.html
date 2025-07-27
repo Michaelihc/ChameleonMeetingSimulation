@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chameleon Meeting Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .red { color: #e74c3c; }
+        .blue { color: #3498db; }
+        .green { color: #27ae60; }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            background-color: #f39c12;
+        }
+
+        .reset-btn:hover {
+            background-color: #e67e22;
+        }
+
+        .auto-btn {
+            background-color: #9b59b6;
+        }
+
+        .auto-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .chameleon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+            gap: 5px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .chameleon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .chameleon:hover {
+            transform: scale(1.1);
+        }
+
+        .chameleon.selected {
+            border: 2px solid #333;
+            transform: scale(1.2);
+        }
+
+        .chameleon.red {
+            background-color: #e74c3c;
+        }
+
+        .chameleon.blue {
+            background-color: #3498db;
+        }
+
+        .chameleon.green {
+            background-color: #27ae60;
+        }
+
+        .info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .speed-control {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .speed-control label {
+            margin-right: 10px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦎 Chameleon Meeting Simulation</h1>
+        
+        <div class="info">
+            <strong>Rules:</strong> When two chameleons of different colors meet, they both change to the third color. 
+            Click on two chameleons to make them meet, or use the random meeting button!
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number red" id="redCount">10</div>
+                <div>Red Chameleons</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number blue" id="blueCount">11</div>
+                <div>Blue Chameleons</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number green" id="greenCount">12</div>
+                <div>Green Chameleons</div>
+            </div>
+        </div>
+
+        <div class="chameleon-grid" id="chameleonGrid"></div>
+
+        <div class="controls">
+            <button onclick="randomMeeting()">Random Meeting</button>
+            <button class="auto-btn" onclick="toggleAutoMode()" id="autoBtn">Start Auto Mode</button>
+            <button class="reset-btn" onclick="resetSimulation()">Reset</button>
+        </div>
+
+        <div class="speed-control">
+            <label for="speedSlider">Auto Mode Speed:</label>
+            <input type="range" id="speedSlider" min="100" max="2000" value="1000" step="100">
+            <span id="speedValue">1000ms</span>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        class ChameleonSimulation {
+            constructor() {
+                this.chameleons = [];
+                this.selectedChameleons = [];
+                this.isAutoMode = false;
+                this.autoInterval = null;
+                this.meetingCount = 0;
+                
+                this.initializeChameleons();
+                this.renderChameleons();
+                this.setupSpeedControl();
+            }
+
+            initializeChameleons() {
+                this.chameleons = [];
+                this.meetingCount = 0;
+                
+                // Add 10 red, 11 blue, 12 green chameleons
+                for (let i = 0; i < 10; i++) {
+                    this.chameleons.push({ id: i, color: 'red' });
+                }
+                for (let i = 10; i < 21; i++) {
+                    this.chameleons.push({ id: i, color: 'blue' });
+                }
+                for (let i = 21; i < 33; i++) {
+                    this.chameleons.push({ id: i, color: 'green' });
+                }
+                
+                // Shuffle the array for random positioning
+                this.shuffleArray(this.chameleons);
+                this.updateStats();
+                this.clearLog();
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            renderChameleons() {
+                const grid = document.getElementById('chameleonGrid');
+                grid.innerHTML = '';
+                
+                this.chameleons.forEach(chameleon => {
+                    const div = document.createElement('div');
+                    div.className = `chameleon ${chameleon.color}`;
+                    div.textContent = '🦎';
+                    div.onclick = () => this.selectChameleon(chameleon.id);
+                    div.id = `chameleon-${chameleon.id}`;
+                    grid.appendChild(div);
+                });
+            }
+
+            selectChameleon(id) {
+                if (this.isAutoMode) return;
+                
+                const chameleonElement = document.getElementById(`chameleon-${id}`);
+                
+                if (this.selectedChameleons.includes(id)) {
+                    // Deselect
+                    this.selectedChameleons = this.selectedChameleons.filter(selectedId => selectedId !== id);
+                    chameleonElement.classList.remove('selected');
+                } else if (this.selectedChameleons.length < 2) {
+                    // Select
+                    this.selectedChameleons.push(id);
+                    chameleonElement.classList.add('selected');
+                    
+                    if (this.selectedChameleons.length === 2) {
+                        // Two chameleons selected, make them meet
+                        setTimeout(() => this.makeMeeting(this.selectedChameleons[0], this.selectedChameleons[1]), 500);
+                    }
+                }
+            }
+
+            makeMeeting(id1, id2) {
+                const chameleon1 = this.chameleons.find(c => c.id === id1);
+                const chameleon2 = this.chameleons.find(c => c.id === id2);
+                
+                if (!chameleon1 || !chameleon2) return;
+                
+                const oldColor1 = chameleon1.color;
+                const oldColor2 = chameleon2.color;
+                
+                if (oldColor1 === oldColor2) {
+                    this.log(`Meeting #${++this.meetingCount}: Two ${oldColor1} chameleons met - no change!`);
+                } else {
+                    // Find the third color
+                    const colors = ['red', 'blue', 'green'];
+                    const newColor = colors.find(color => color !== oldColor1 && color !== oldColor2);
+                    
+                    chameleon1.color = newColor;
+                    chameleon2.color = newColor;
+                    
+                    this.log(`Meeting #${this.meetingCount + 1}: ${oldColor1} + ${oldColor2} → both become ${newColor}`);
+                    this.meetingCount++;
+                }
+                
+                // Clear selections and re-render
+                this.selectedChameleons = [];
+                this.renderChameleons();
+                this.updateStats();
+            }
+
+            randomMeeting() {
+                if (this.chameleons.length < 2) return;
+                
+                const id1 = Math.floor(Math.random() * this.chameleons.length);
+                let id2 = Math.floor(Math.random() * this.chameleons.length);
+                while (id2 === id1) {
+                    id2 = Math.floor(Math.random() * this.chameleons.length);
+                }
+                
+                this.makeMeeting(this.chameleons[id1].id, this.chameleons[id2].id);
+            }
+
+            toggleAutoMode() {
+                const button = document.getElementById('autoBtn');
+                
+                if (this.isAutoMode) {
+                    this.isAutoMode = false;
+                    clearInterval(this.autoInterval);
+                    button.textContent = 'Start Auto Mode';
+                    button.className = 'auto-btn';
+                } else {
+                    this.isAutoMode = true;
+                    const speed = parseInt(document.getElementById('speedSlider').value);
+                    this.autoInterval = setInterval(() => this.randomMeeting(), speed);
+                    button.textContent = 'Stop Auto Mode';
+                    button.className = 'auto-btn';
+                    button.style.backgroundColor = '#e74c3c';
+                }
+            }
+
+            setupSpeedControl() {
+                const speedSlider = document.getElementById('speedSlider');
+                const speedValue = document.getElementById('speedValue');
+                
+                speedSlider.addEventListener('input', (e) => {
+                    const speed = parseInt(e.target.value);
+                    speedValue.textContent = `${speed}ms`;
+                    
+                    if (this.isAutoMode) {
+                        clearInterval(this.autoInterval);
+                        this.autoInterval = setInterval(() => this.randomMeeting(), speed);
+                    }
+                });
+            }
+
+            updateStats() {
+                const counts = { red: 0, blue: 0, green: 0 };
+                this.chameleons.forEach(chameleon => {
+                    counts[chameleon.color]++;
+                });
+                
+                document.getElementById('redCount').textContent = counts.red;
+                document.getElementById('blueCount').textContent = counts.blue;
+                document.getElementById('greenCount').textContent = counts.green;
+            }
+
+            log(message) {
+                const logElement = document.getElementById('log');
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+                logElement.appendChild(entry);
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+
+            clearLog() {
+                document.getElementById('log').innerHTML = '';
+                this.log('Simulation initialized with 10 red, 11 blue, and 12 green chameleons');
+            }
+
+            reset() {
+                if (this.isAutoMode) {
+                    this.toggleAutoMode();
+                }
+                this.selectedChameleons = [];
+                this.initializeChameleons();
+                this.renderChameleons();
+            }
+        }
+
+        // Initialize the simulation
+        let simulation;
+
+        window.onload = function() {
+            simulation = new ChameleonSimulation();
+        };
+
+        function randomMeeting() {
+            simulation.randomMeeting();
+        }
+
+        function toggleAutoMode() {
+            simulation.toggleAutoMode();
+        }
+
+        function resetSimulation() {
+            simulation.reset();
+        }
+    </script>
+</body>
+</html>
