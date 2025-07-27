@@ -58,7 +58,10 @@ This preserves all pairwise differences modulo 3.
 
 ## 🚀 Installation
 
-### Option 1: Direct Download
+### Option 1
+Paste the content of index.html to the HTML part of https://liveweave.com/
+
+### Option 2: Direct Download
 1. Download or clone this repository:
 ```bash
 git clone https://github.com/your-username/chameleon-simulation.git
@@ -67,22 +70,12 @@ cd chameleon-simulation
 
 2. Open `index.html` in your web browser
 
-### Option 2: GitHub Pages
+### Option 3: GitHub Pages
 1. Fork this repository
 2. Go to Settings → Pages
 3. Select source branch (usually `main`)
 4. Access via `https://your-username.github.io/chameleon-simulation/`
 
-### Option 3: Local Server
-```bash
-# Using Python 3
-python -m http.server 8000
-
-# Using Node.js
-npx serve .
-
-# Then open http://localhost:8000
-```
 
 ## 🎯 Usage
 
